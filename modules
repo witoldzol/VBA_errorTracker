@@ -1,0 +1,201 @@
+Option Compare Database
+
+
+' Function to insert default value into field
+
+Public Function getWinUser() As String
+    getWinUser = Environ("UserName")
+End Function
+
+
+
+'------------------------------------------------------------
+' btn_saveRecord_Click
+'
+'------------------------------------------------------------
+Private Sub btn_saveRecord_Click()
+    
+    'variables for reg ex -- we will test if doc id is in correct format
+    Dim strKeyFull As String: strKeyFull = "^4.IPM_[0-9]{6,6}$"
+    Dim strKey As String: strKey = "^[0-9]{6,6}$"
+    Dim regEx As New RegExp
+    Dim regExFull As New RegExp
+    
+    
+    'REG EX TEST 1
+    
+    With regEx
+        .Global = True
+        .ignorecase = True
+        .pattern = strKey
+    End With
+    
+    ' REG EX TEST 2
+       
+    With regExFull
+        .Global = True
+        .ignorecase = True
+        .pattern = strKeyFull
+    End With
+        
+        
+    If Not regExFull.test(DocumentID.Value) And Not regEx.test(DocumentID.Value) Then
+    
+            Me.ReportType.Value = "TNE"
+            
+            
+    Else
+        
+        If regEx.test(DocumentID.Value) Then
+                
+                Me.DocumentID.Value = "4.IPM_" & DocumentID.Value
+                
+        End If
+        
+        Me.ReportType.Value = "INVOICE"
+        
+    End If
+    
+    'check if any of the fields is empty
+    
+    If IsNull(Me.DocumentID.Value) Or IsNull(Me.ErrorType.Value) Or IsNull(Me.ErrorQueueSpotted.Value) Or _
+    IsNull(Me.ErrorMadeBy.Value) Or IsNull(Me.ErrorQueueSpotted.Value) Then
+    MsgBox "please populate all fields"
+    Exit Sub
+    End If
+    
+
+
+    
+        'add record to the database
+        
+        On Error Resume Next
+        DoCmd.RunCommand acCmdSaveRecord
+        If (MacroError <> 0) Then
+            Beep
+           MsgBox MacroError.Description, vbOKOnly, ""
+        End If
+
+        'create new record
+        
+        On Error Resume Next
+        DoCmd.GoToRecord , "", acNewRec
+        If (MacroError <> 0) Then
+            Beep
+            MsgBox MacroError.Description, vbOKOnly, ""
+        End If
+
+
+    
+    
+End Sub
+
+Private Sub ClearForm_Click()
+    
+    With Me
+        .DocumentID.Value = Null
+        .ErrorType.Value = Null
+        .ErrorQueue.Value = Null
+        .ErrorMadeBy = Null
+        .ErrorQueueSpotted = Null
+        .Notes = Null
+        .ReportType = Null
+    End With
+    
+      
+End Sub
+
+'after inserting doc id, this sub checks the id and updates report type field as necessary
+
+Private Sub DocumentID_AfterUpdate()
+    
+    'variables for reg ex -- we will test if doc id is in correct format
+    Dim strKeyFull As String: strKeyFull = "^4.IPM_[0-9]{6,6}$"
+    Dim strKey As String: strKey = "^[0-9]{6,6}$"
+    Dim regEx As New RegExp
+    Dim regExFull As New RegExp
+    
+    
+    'REG EX TEST 1
+    
+    With regEx
+        .Global = True
+        .ignorecase = True
+        .pattern = strKey
+    End With
+    
+    ' REG EX TEST 2
+       
+    With regExFull
+        .Global = True
+        .ignorecase = True
+        .pattern = strKeyFull
+    End With
+        
+    
+    If Not regExFull.test(DocumentID.Value) And Not regEx.test(DocumentID.Value) Then
+    
+            Me.ReportType.Value = "TNE"
+            
+            
+    Else
+        
+        If regEx.test(DocumentID.Value) Then
+                
+                Me.DocumentID.Value = "4.IPM_" & DocumentID.Value
+                
+        End If
+        
+        Me.ReportType.Value = "INVOICE"
+        
+    End If
+    
+    
+End Sub
+
+'**** update list of queues where error occurred depending on document type ****
+
+Private Sub ErrorQueue_GotFocus()
+    
+    If Me.ReportType.Value = "INVOICE" Then
+        
+        Me.ErrorQueue.RowSource = "tb8InvoiceErrorQueues"
+        
+    ElseIf Me.ReportType.Value = "TNE" Then
+        
+        Me.ErrorQueue.RowSource = "tb9TNEErrorQueues"
+        
+    End If
+    
+End Sub
+
+'*****  update list of queues for Error Queue Spotted dropbox depending on the document ****
+
+Private Sub ErrorQueueSpotted_GotFocus()
+
+    If Me.ReportType.Value = "INVOICE" Then
+        
+        Me.ErrorQueueSpotted.RowSource = "tb5InvoiceQueues"
+        
+    ElseIf Me.ReportType.Value = "TNE" Then
+        
+        Me.ErrorQueueSpotted.RowSource = "tb7TNEQueues"
+        
+    End If
+    
+End Sub
+
+
+Private Sub ErrorType_GotFocus()
+    
+    If Me.ReportType.Value = "INVOICE" Then
+        
+        Me.ErrorType.RowSource = "tb10InvoiceErrorTypes"
+        
+    ElseIf Me.ReportType.Value = "TNE" Then
+        
+        Me.ErrorType.RowSource = "tb11TNEErrorTypes"
+        
+    End If
+End Sub
+
